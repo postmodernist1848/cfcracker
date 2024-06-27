@@ -10,8 +10,20 @@ func TestConstructSource(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	err = constructSource(source)
+	parts, err := intoParts(source)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+
+	testCases := TestCases{
+		[][]int{},
+		false,
+	}
+
+	constructed := constructFromParts(parts, testCases)
+	err = os.WriteFile("solutions/out.cpp", []byte(constructed), 0666)
+	if err != nil {
+		t.Errorf("could not write to file: %v", err)
+	}
+	// TODO: compile and test
 }

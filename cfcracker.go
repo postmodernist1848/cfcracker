@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -90,15 +91,14 @@ func findCSRF(client *http.Client, submitUrl string) (string, error) {
 	return csrfToken, nil
 }
 
-type TestCase struct {
-	numbers  []int
+type TestCases struct {
+	cases    [][]int
 	complete bool
 }
 
 type Parts struct {
 	part1 []byte
 	part2 []byte
-	part3 []byte
 }
 
 func trimUntilNewline(s []byte) []byte {
@@ -110,43 +110,106 @@ func trimUntilNewline(s []byte) []byte {
 	return s[newlineIdx+1:]
 }
 
+const crackerSignature = " void crack(const std::vector<int> &test_case);"
+
 func intoParts(source []byte) (Parts, error) {
-	setIndex := bytes.Index(source, []byte("// {{CFCRACKER_SET}}"))
-	crackIndex := bytes.Index(source, []byte("// {{CFCRACKER_CRACK}}"))
-	if setIndex == -1 {
-		return Parts{}, errors.New("CFCRACKER_SET not found")
-	}
-	if crackIndex == -1 {
-		return Parts{}, errors.New("CFCRACKER_CRACK not found")
-	}
+	magic := []byte("/* CFCRACKER */")
+	signature := []byte(crackerSignature)
 
-	if crackIndex < setIndex {
-		return Parts{}, errors.New("CRACK before SET not allowed")
+	index := bytes.Index(source, magic)
+	if index == -1 {
+		return Parts{}, errors.New("CFCRACKER magic not found")
 	}
 
-	part1 := source[:setIndex]
+	after := source[index+len(magic):]
+	if !bytes.HasPrefix(after, signature) {
+		return Parts{}, errors.New("crack signature incorrect")
+	}
 
-	part2 := source[setIndex+1 : crackIndex]
-	part2 = trimUntilNewline(part2)
+	const headers = `#include <vector>
+#include <chrono>
+#include <thread>
+#include <cassert>
+`
+	part1 := append([]byte(headers), source[:index]...)
+	part2 := source[index+len(magic)+len(signature):]
 
-	part3 := source[crackIndex+1:]
-	part3 = trimUntilNewline(part3)
 	return Parts{
 			part1,
 			part2,
-			part3,
 		},
 		nil
 }
 
-func fromParts(parts Parts) string {
+// Possible outcomes that can be forced and their meanings:
+// Incorrect answer = last test reached
+// Runtime error = stop timer to read inputs
+// Program frozen (sleep) = input can't be processed by cfcracker
+// TL exceeded
+
+// TODO: create a global start time and wait until ~100ms have passed
+// before waiting out the input value to achieve more precise readings
+
+// Idea: set the start time to +400ms or something to ignore longer runs before this test
+// allocate readings from 400ms to 950 to numbers from 0 to 10 (i. e. 50ms increments)
+
+func constructFromParts(parts Parts, testCases TestCases) string {
 	var builder strings.Builder
-
 	builder.Write(parts.part1)
-	builder.Write(parts.part2)
-	builder.Write(parts.part3)
 
-	fmt.Print(builder.String())
+	// test_cases vector
+	builder.Write([]byte("std::vector<std::vector<int>> cfcracker_test_cases {"))
+	for _, testCase := range testCases.cases {
+		builder.WriteByte('{')
+		for _, x := range testCase {
+			builder.Write(strconv.AppendInt([]byte{}, int64(x), 10))
+			builder.WriteByte(',')
+		}
+		builder.WriteByte('}')
+		builder.WriteByte(',')
+	}
+	builder.Write([]byte("};\n"))
+
+	// crack function
+	builder.Write([]byte(
+		`void crack(const std::vector<int> &test_case) {
+	for (auto &cfcracker_test_case : cfcracker_test_cases) {
+		if (cfcracker_test_case == test_case) {
+			// already processed, continue with this test
+			return;
+		}
+	}
+`))
+
+	if testCases.complete {
+		builder.Write([]byte("cfcracker_test_cases.push_back(std::vector<int>());\n"))
+	}
+
+	builder.Write([]byte(
+		`	if (test_case.size() == cfcracker_test_cases.back().size()) {
+		assert(false && "end of test case");
+	}
+
+	std::chrono::time_point cfcracker_tp = std::chrono::system_clock::now();
+
+	int cfcracker_x = test_case[cfcracker_test_cases.size()];
+	if (cfcracker_x <= 0) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // error
+	}
+
+	cfcracker_tp += std::chrono::milliseconds(100 * test_case[cfcracker_test_cases.size()]);
+
+	while (std::chrono::system_clock::now() < cfcracker_tp) {
+		// waiting
+	}
+	assert(false && "hello from cfcracker");
+`))
+
+	builder.Write([]byte("}"))
+
+	builder.Write(parts.part2)
+
+	return builder.String()
 }
 
 func crack(client *http.Client, source []byte) error {
