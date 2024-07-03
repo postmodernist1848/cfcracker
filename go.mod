@@ -1,4 +1,4 @@
-module codeforces-cracker
+module cfcracker
 
 go 1.22.4
 
