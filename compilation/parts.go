@@ -57,7 +57,8 @@ func New(source []byte) (Parts, error) {
 		return Parts{}, errors.New("cfc_crack signature incorrect")
 	}
 
-	part1 := source[:index]
+	part1 := []byte("#define CFCRACKER 1\n")
+	part1 = append(part1, source[:index]...)
 	part2 := source[index+len(magic)+len(signature):]
 
 	return Parts{
@@ -67,7 +68,7 @@ func New(source []byte) (Parts, error) {
 		nil
 }
 
-// skipTests is sourceCode to skip known tests
+// skipTests is source code that skips known tests.
 const skipTests = `	for (size_t i = 0; i < cfc_test_cases.size() - 1; ++i) {
 		if (cfc_test_cases[i] == test_case) {
 			// already processed, continue with this test
@@ -76,8 +77,9 @@ const skipTests = `	for (size_t i = 0; i < cfc_test_cases.size() - 1; ++i) {
 	}
 `
 
+// checkErrors is source that forces MEMORY_LIMIT_EXCEEDED if previous values are incorrect.
 const checkErrors = `
-	if (test_case.size() <= cfc_test_cases.back().size()) {
+	if (test_case.size() < cfc_test_cases.back().size()) {
 		// error detected, commit suicide
 		while (true) {
 			char *p = (char *)malloc(1024 * 1024);
@@ -93,11 +95,14 @@ const checkErrors = `
 		}
 	}
 `
+
+// reportEndOfTest is source that forces IDLENESS_LIMIT_EXCEEDED
+// if last value of this test has been reached
 const reportEndOfTest = `
 	if (test_case == cfc_test_cases.back()) {
 		std::cerr << "end of test case\n";
 		// force idleness_limit_exceeded
-		std::this_thread::sleep_for(std::chrono::seconds(4));
+		std::this_thread::sleep_for(std::chrono::seconds(3));
 	}
 `
 

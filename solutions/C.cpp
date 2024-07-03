@@ -121,7 +121,9 @@ int main() {
         std::cin >> test_case[i];
     }
 
+#ifdef CFCRACKER
     cfc_crack(test_case);
+#endif
 
     if (n == 0) {
         std::cout << 0 << '\n';
