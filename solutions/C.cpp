@@ -81,14 +81,14 @@ private:
 
         // interval i corresponds to [y_i, y_{i+1}]
 
-        dbg::out() << DEBUG(v) << DEBUG(l) << DEBUG(r) << DEBUG(qy_l) << DEBUG(qy_r);
+        //dbg::out() << DEBUG(v) << DEBUG(l) << DEBUG(r) << DEBUG(qy_l) << DEBUG(qy_r);
         if (m_ys[r] <= qy_l || qy_r <= m_ys[l]) return;
 
         if (qy_l <= m_ys[l] && m_ys[r] <= qy_r) {
             m_t[v].counter += is_beg ? 1 : -1;
             if (m_t[v].counter > 0) m_t[v].sum = m_ys[r] - m_ys[l];
             else m_t[v].sum = m_t[2 * v + 1].sum + m_t[2 * v + 2].sum;
-            dbg::out() << DEBUG(v) << DEBUG(l) << DEBUG(r) << DEBUG(m_t[v].sum) << DEBUG(m_t[v].counter);
+            //dbg::out() << DEBUG(v) << DEBUG(l) << DEBUG(r) << DEBUG(m_t[v].sum) << DEBUG(m_t[v].counter);
             return;
         }
 
@@ -100,7 +100,7 @@ private:
 
         if (m_t[v].counter > 0) m_t[v].sum = m_ys[r] - m_ys[l];
         else m_t[v].sum = m_t[2 * v + 1].sum + m_t[2 * v + 2].sum;
-        dbg::out() << DEBUG(v) << DEBUG(l) << DEBUG(r) << DEBUG(m_t[v].sum) << DEBUG(m_t[v].counter);
+        //dbg::out() << DEBUG(v) << DEBUG(l) << DEBUG(r) << DEBUG(m_t[v].sum) << DEBUG(m_t[v].counter);
     }
 
     std::vector<int> m_ys;
@@ -157,26 +157,26 @@ int main() {
         return 0;
     }
 
-    for (int y : ys) {
-        dbg::out() << DEBUG(y);
-    }
-    dbg::out() << "---------";
+    //for (int y : ys) {
+    //    dbg::out() << DEBUG(y);
+    //}
+    //dbg::out() << "---------";
 
     SegmentTree st(std::move(ys));
 
     i64 ans = 0;
 
-    dbg::out() << DEBUG(edges[0].x) << DEBUG(edges[0].y1) << DEBUG(edges[0].y2) << DEBUG(edges[0].is_beg);
+    //dbg::out() << DEBUG(edges[0].x) << DEBUG(edges[0].y1) << DEBUG(edges[0].y2) << DEBUG(edges[0].is_beg);
     st.update(edges[0].y1, edges[0].y2, edges[0].is_beg);
 
     for (size_t i = 1; i < edges.size(); ++i) {
 
-        dbg::out() << DEBUG(edges[i].x) << DEBUG(edges[i].y1) << DEBUG(edges[i].y2) << DEBUG(edges[i].is_beg);
+        //dbg::out() << DEBUG(edges[i].x) << DEBUG(edges[i].y1) << DEBUG(edges[i].y2) << DEBUG(edges[i].is_beg);
         ans += i64(edges[i].x - edges[i - 1].x) * st.get_all();
-        dbg::out() << DEBUG(st.get_all()) << DEBUG(ans);
+        //dbg::out() << DEBUG(st.get_all()) << DEBUG(ans);
 
         st.update(edges[i].y1, edges[i].y2, edges[i].is_beg);
     }
 
-    std::cout << ans << '\n';
+    std::cout << ans << std::endl;
 }

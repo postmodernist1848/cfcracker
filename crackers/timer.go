@@ -41,7 +41,7 @@ func (cracker *TimerCracker) GetNextValue(c *client.Client, parts compilation.Pa
 	var sign int
 
 	if sub.Verdict == client.MemoryLimitExceeded {
-		return 0, fmt.Errorf("error detected in previous values of this test")
+		return 0, client.ValueError{}
 	}
 	if sub.Verdict == client.IdlenessLimitExceeded {
 		return 0, client.LastTestValueError{}
@@ -71,7 +71,7 @@ func (cracker *TimerCracker) GetNextValue(c *client.Client, parts compilation.Pa
 			return 0, err
 		}
 		if sub.Verdict == client.MemoryLimitExceeded {
-			return 0, fmt.Errorf("mistake detected in previous values of this test")
+			return 0, client.ValueError{}
 		}
 		if sub.Verdict == client.IdlenessLimitExceeded {
 			return 0, client.LastTestValueError{}

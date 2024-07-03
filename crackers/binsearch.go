@@ -26,6 +26,9 @@ func (binSearchCracker *BinSearchCracker) GetNextValue(c *client.Client, parts c
 		if err != nil {
 			return 0, err
 		}
+		if res.Verdict == client.MemoryLimitExceeded {
+			return 0, client.ValueError{}
+		}
 		if res.Verdict == client.IdlenessLimitExceeded {
 			return 0, client.LastTestValueError{}
 		}

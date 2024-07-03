@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"cfcracker/compilation"
 	"errors"
 	"fmt"
@@ -47,7 +48,10 @@ func (client *Client) FindCSRF(URL string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
+	os.WriteFile("response.html", body, 0666)
+
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
 	if err != nil {
 		return "", err
 	}
@@ -55,6 +59,8 @@ func (client *Client) FindCSRF(URL string) (string, error) {
 	// Find the input tag with name="csrf_token"
 	csrfToken, exists := doc.Find("input[name='csrf_token']").Attr("value")
 	if !exists {
+		log.Println(URL)
+		os.WriteFile("response.html", body, 0666)
 		return csrfToken, errors.New("failed to find csrf token")
 	}
 	return csrfToken, nil
@@ -163,6 +169,12 @@ func (LastTestValueError) Error() string {
 	return "last test reached"
 }
 
+type ValueError struct{}
+
+func (ValueError) Error() string {
+	return "last value is incorrect"
+}
+
 type Verdict int
 
 const (
@@ -190,6 +202,12 @@ func (client *Client) Crack(source []byte, cracker Cracker) error {
 	for {
 		next, err := cracker.GetNextValue(client, parts)
 		if err != nil {
+			if _, ok := err.(ValueError); ok {
+				log.Println("Error detected in last value. Retrying...")
+				client.Cases = client.Cases[:len(client.Cases)-1]
+				fmt.Println(client.Cases)
+				continue
+			}
 			if _, ok := err.(LastTestValueError); ok {
 				client.Cases = append(client.Cases, []int{})
 				continue
