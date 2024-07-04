@@ -8,7 +8,7 @@ import (
 )
 
 func debugCLI(as ...interface{}) {
-	for a := range as {
+	for _, a := range as {
 		log.Println(a)
 	}
 	os.Exit(0)

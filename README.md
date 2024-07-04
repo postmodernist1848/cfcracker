@@ -8,7 +8,7 @@ The reason why I made it was that I couldn't figure out one single test case in 
 ## Installation
 ```console
 $ go install github.com/postmodernist1848/cfcracker/cmd/cfcracker
-$ $GOPATH/bin/cfcracker -help
+$ $GOPATH/bin/cfcracker help
 ```
 ## How to use it
 
@@ -18,13 +18,14 @@ and you get sanitizer output, but it's just a demo).
 
 First, you need to create a config:
 ```console
-$ cfcracker -create-config solutions/1A.json
+$ cfcracker create-config solutions/1A.json
 Created sample config at 1A.json
 ```
 Fill it with:
 ```json
 {
     "contest_url": "https://codeforces.com/problemset",
+    "my_url" : "https://codeforces.com/problemset/status?my=on",
     "lang_id": "54",
     "contest_id": "1",
     "problem_id": "A",
@@ -73,7 +74,7 @@ int main() {
 Start cracking with:
 ###### Tip: you can use HISTCONTROL=ignorespace option in bash to disable saving the command (and password) to history
 ```console
-$  cfcracker -source solutions/1A_crack.cpp -config solutions/1A.json postmodernist1848 password
+$  cfcracker crack -source solutions/1A_crack.cpp -config solutions/1A.json postmodernist1848 password
 ```
 You'll see the logs of cracking and the test cases will be printed:
 ```console

@@ -122,11 +122,36 @@ func clientFromJSON(path string) (*client.Client, error) {
 	return &c, nil
 }
 
-func clientToJson(c *client.Client, path string) {
-	file, err = os.OpenFile(path, os.O_WRONLY, 0644)
-	if err != nil {
+func createSubmitFlags(name string) (flags *flag.FlagSet, sourcePath *string, configPath *string) {
+	flags = flag.NewFlagSet(name, flag.ExitOnError)
+	sourcePath = flags.String("source", "", "`path` to the problem solution")
+	configPath = flags.String("config", "cfcracker.json", "`path` to the config json")
+	return
+}
 
-	}
+func help() {
+	const usage = `Usage: cfcracker subcommand [OPTIONS]
+    subcommand may be one of the following:
+        crack [OPTIONS] - start cracking
+        submit [OPTIONS] - submit code without
+        create-config <path> - create sample config file`
+	fmt.Println(usage)
+	crackFlags, _, _ := createSubmitFlags("crack")
+	crackFlags.SetOutput(os.Stdout)
+	crackFlags.Usage()
+	submitFlags, _, _ := createSubmitFlags("submit")
+	submitFlags.SetOutput(os.Stdout)
+	submitFlags.Usage()
+}
+
+func clientToJson(c *client.Client, path string) error {
+	panic("not implemented")
+	/*
+		file, err = os.OpenFile(path, os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+	*/
 }
 
 var arg_i = 0
@@ -150,6 +175,12 @@ func main() {
 	subcommand := nextArg("expected subcommand")
 
 	var err error
+
+	if subcommand == "help" {
+		help()
+		return
+	}
+
 	if subcommand == "create-config" {
 		path := nextArg("expected path for create-config")
 		err = createConfig(path)
@@ -162,11 +193,7 @@ func main() {
 		fatalln("unknown subcommand", subcommand)
 	}
 
-	// TODO: custom flags.Usage
-	flags := flag.NewFlagSet(subcommand, flag.ExitOnError)
-
-	sourcePath := flags.String("source", "", "`path` to the problem solution")
-	configPath := flags.String("config", "cfcracker.json", "`path` to the config json")
+	flags, sourcePath, configPath := createSubmitFlags(subcommand)
 
 	flags.Parse(os.Args[2:])
 
@@ -178,37 +205,38 @@ func main() {
 		fatalln("no source path")
 	}
 
-	if len(flag.Args()) < 2 {
-		fatalln("expected login and password\n")
+	if len(flags.Args()) < 2 {
+		fatalln("expected login and password")
 	}
 
-	handleOrEmail := flag.Args()[0]
-	password := flag.Args()[1]
+	handleOrEmail := flags.Args()[0]
+	password := flags.Args()[1]
 
 	c, err := clientFromJSON(*configPath)
 	if err != nil {
-		fatalln("could not parse config: ", err)
+		fatalln("could not parse config:", err)
 	}
-
-	debugCLI(handleOrEmail, password, c, sourcePath, subcommand)
 
 	source, err := os.ReadFile(*sourcePath)
 	if err != nil {
-		fatalln("could not read source file: ", err)
+		fatalln("could not read source file:", err)
 	}
+
+	debugCLI(subcommand, c, *sourcePath, *configPath, handleOrEmail, password)
+
 	err = c.Login(handleOrEmail, password)
 	if err != nil {
-		fatalln("could not log in: ", err)
+		fatalln("could not log in:", err)
 	}
 
 	if subcommand == "submit" {
 		csrf, err := c.FindCSRF(c.SubmitUrl())
 		if err != nil {
-			fatalln("could not find csrf token: ", err)
+			fatalln("could not find csrf token:", err)
 		}
 		_, err = c.Submit(csrf, string(source))
 		if err != nil {
-			fatalln("submission failed: ", err)
+			fatalln("submission failed:", err)
 		}
 		return
 	}
