@@ -35,7 +35,7 @@ func (cracker *TimerCracker) GetNextValue(c *client.Client, parts compilation.Pa
 	}
 
 	signSource := parts.SignSource(c.Cases)
-	sub, err := c.SendSubmission(csrf, signSource)
+	sub, err := c.Submit(csrf, signSource)
 	if err != nil {
 		return 0, err
 	}
@@ -68,7 +68,7 @@ func (cracker *TimerCracker) GetNextValue(c *client.Client, parts compilation.Pa
 			cracker.Increment,
 			digitNo,
 		)
-		sub, err = c.SendSubmission(csrf, source)
+		sub, err = c.Submit(csrf, source)
 		if err != nil {
 			return 0, err
 		}

@@ -3,16 +3,13 @@
 package main
 
 import (
-	"github.com/postmodernist1848/cfcracker/client"
 	"log"
 	"os"
 )
 
-func debugCLI(handleOrEmail string, password string, c *client.Client, sourcePath *string, createConfigPath *string) {
-	log.Println(handleOrEmail)
-	log.Println(password)
-	log.Println(c)
-	log.Println(*sourcePath)
-	log.Println(*createConfigPath)
+func debugCLI(as ...interface{}) {
+	for a := range as {
+		log.Println(a)
+	}
 	os.Exit(0)
 }

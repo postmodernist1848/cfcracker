@@ -122,6 +122,23 @@ func clientFromJSON(path string) (*client.Client, error) {
 	return &c, nil
 }
 
+func clientToJson(c *client.Client, path string) {
+	file, err = os.OpenFile(path, os.O_WRONLY, 0644)
+	if err != nil {
+
+	}
+}
+
+var arg_i = 0
+
+func nextArg(errorMsg string) string {
+	arg_i++
+	if len(os.Args) <= arg_i {
+		fatalln(errorMsg)
+	}
+	return os.Args[arg_i]
+}
+
 func main() {
 
 	// Options:
@@ -130,39 +147,35 @@ func main() {
 	// -create-config
 	// -strategy ?
 
-	// Required:
-	sourcePath := flag.String("source", "", "`path` to the problem solution")
-
-	// With default:
-	configPath := flag.String("config", "cfcracker.json", "`path` to the config json")
-
-	// Optional:
-	createConfigPath := flag.String("create-config", "", "create a new config file at `PATH`")
-
-	flag.Parse()
-
-	shouldCreateConfig := false
-	flag.Visit(func(f *flag.Flag) {
-		if f.Name == "create-config" {
-			shouldCreateConfig = true
-		}
-	})
+	subcommand := nextArg("expected subcommand")
 
 	var err error
-	if shouldCreateConfig {
-		err = createConfig(*createConfigPath)
+	if subcommand == "create-config" {
+		path := nextArg("expected path for create-config")
+		err = createConfig(path)
 		if err != nil {
 			fatalln("could not create config file:", err)
 		}
-		return
 	}
 
+	if subcommand != "submit" && subcommand != "crack" {
+		fatalln("unknown subcommand", subcommand)
+	}
+
+	// TODO: custom flags.Usage
+	flags := flag.NewFlagSet(subcommand, flag.ExitOnError)
+
+	sourcePath := flags.String("source", "", "`path` to the problem solution")
+	configPath := flags.String("config", "cfcracker.json", "`path` to the config json")
+
+	flags.Parse(os.Args[2:])
+
 	if *configPath == "" {
-		fatalln("no config path provided")
+		fatalln("no config path")
 	}
 
 	if *sourcePath == "" {
-		fatalln("source path is required")
+		fatalln("no source path")
 	}
 
 	if len(flag.Args()) < 2 {
@@ -174,20 +187,33 @@ func main() {
 
 	c, err := clientFromJSON(*configPath)
 	if err != nil {
-		fatalln(err)
+		fatalln("could not parse config: ", err)
 	}
 
-	debugCLI(handleOrEmail, password, c, sourcePath, createConfigPath)
+	debugCLI(handleOrEmail, password, c, sourcePath, subcommand)
 
 	source, err := os.ReadFile(*sourcePath)
 	if err != nil {
-		fatalln(err)
+		fatalln("could not read source file: ", err)
 	}
 	err = c.Login(handleOrEmail, password)
 	if err != nil {
-		fatalln(err)
+		fatalln("could not log in: ", err)
 	}
 
+	if subcommand == "submit" {
+		csrf, err := c.FindCSRF(c.SubmitUrl())
+		if err != nil {
+			fatalln("could not find csrf token: ", err)
+		}
+		_, err = c.Submit(csrf, string(source))
+		if err != nil {
+			fatalln("submission failed: ", err)
+		}
+		return
+	}
+
+	// TODO: strategy flag
 	//cracker := &crackers.BinSearchCracker{
 	//	Low:  1,
 	//	High: 100 + 1,

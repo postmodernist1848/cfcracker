@@ -22,7 +22,7 @@ func (binSearchCracker *BinSearchCracker) GetNextValue(c *client.Client, parts c
 	// r > x
 	for r-l > 1 {
 		m := (l + r) / 2
-		res, err := c.SendSubmission(csrf, parts.LTSource(c.Cases, m))
+		res, err := c.Submit(csrf, parts.LTSource(c.Cases, m))
 		if err != nil {
 			return 0, err
 		}

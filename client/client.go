@@ -22,9 +22,9 @@ var bfaa = "f1b3f18c715565b589b7823cda7448ce"
 
 type Client struct {
 	http.Client `json:"-"`
-	HostUrl     string                `json:"host_url,omitempty"` // as in https://codeforces.com, derived from contest_url
-	MyUrl       string                `json:"my_url"`             // as in https://codeforces.com/contest/4/my
-	ContestUrl  string                `json:"contest_url"`        // as in https://codeforces.com/contest/4
+	HostUrl     string                `json:"-"`           // as in https://codeforces.com, derived from contest_url
+	MyUrl       string                `json:"my_url"`      // as in https://codeforces.com/contest/4/my
+	ContestUrl  string                `json:"contest_url"` // as in https://codeforces.com/contest/4
 	LangId      string                `json:"lang_id"`
 	ContestId   string                `json:"contest_id"`
 	ProblemId   string                `json:"problem_id"`
@@ -54,7 +54,7 @@ func (client *Client) FindCSRF(URL string) (string, error) {
 	// Find the input tag with name="csrf_token"
 	csrfToken, exists := doc.Find("input[name='csrf_token']").Attr("value")
 	if !exists {
-		return csrfToken, fmt.Errorf("%v: failed to find csrf token", URL)
+		return "", fmt.Errorf("%v: no csrf token input", URL)
 	}
 	return csrfToken, nil
 }
@@ -88,7 +88,7 @@ func (client *Client) Login(handleOrEmail string, password string) error {
 	reg := regexp.MustCompile(`handle = "([\s\S]+?)"`)
 	tmp := reg.FindSubmatch(body)
 	if tmp == nil || len(tmp) < 2 {
-		return errors.New("failed to log in")
+		return errors.New("CodeForces error")
 	}
 	handle := string(tmp[1])
 	fmt.Printf("Logged in as %s\n", handle)
@@ -300,7 +300,7 @@ type SubmissionResult struct {
 	Time time.Duration
 }
 
-func (client *Client) SendSubmission(csrf string, source string) (res SubmissionResult, err error) {
+func (client *Client) Submit(csrf string, source string) (res SubmissionResult, err error) {
 	prevId, _, _, _, err := client.getVerdict()
 	if err != nil {
 		return
