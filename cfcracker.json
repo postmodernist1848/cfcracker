@@ -1,0 +1,18 @@
+{
+    "contest_url": "https://codeforces.com/problemset",
+    "my_url" : "https://codeforces.com/problemset/status?my=on",
+    "lang_id": "54",
+    "contest_id": "1",
+    "problem_id": "A",
+    "test_cases": [
+        [6, 6, 4],
+        [1, 1, 1],
+        [2, 1, 1],
+        [1, 2, 1],
+        [2, 2, 1],
+        [2, 1, 2],
+        [1, 1, 3],
+        [2, 3, 4],
+        [1000000000, 1000000000]
+    ]
+}

@@ -115,6 +115,7 @@ func (parts Parts) LTSource(cases TestCases, n int) string {
 	var builder strings.Builder
 
 	const headers = `#include <vector>
+#include <iostream>
 #include <thread>
 #include <chrono>
 #include <cassert>
@@ -157,6 +158,7 @@ func (parts Parts) SignSource(testCases TestCases) string {
 	var builder strings.Builder
 
 	const headers = `#include <vector>
+#include <iostream>
 #include <thread>
 #include <chrono>
 #include <cassert>
@@ -198,6 +200,7 @@ func (parts Parts) DigitSource(testCases TestCases, increment time.Duration, dig
 	var builder strings.Builder
 
 	const headers = `#include <vector>
+#include <iostream>
 #include <thread>
 #include <chrono>
 #include <cassert>

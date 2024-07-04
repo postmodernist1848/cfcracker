@@ -131,13 +131,13 @@ func main() {
 	// -strategy ?
 
 	// Required:
-	sourcePath := flag.String("source", "", "path to the problem solution")
+	sourcePath := flag.String("source", "", "`path` to the problem solution")
 
 	// With default:
-	configPath := flag.String("config", "cfcracker.json", "path to the config json")
+	configPath := flag.String("config", "cfcracker.json", "`path` to the config json")
 
 	// Optional:
-	createConfigPath := flag.String("create-config", "", "create a new config file")
+	createConfigPath := flag.String("create-config", "", "create a new config file at `PATH`")
 
 	flag.Parse()
 
@@ -176,6 +176,8 @@ func main() {
 	if err != nil {
 		fatalln(err)
 	}
+
+	debugCLI(handleOrEmail, password, c, sourcePath, createConfigPath)
 
 	source, err := os.ReadFile(*sourcePath)
 	if err != nil {

@@ -23,6 +23,7 @@ var bfaa = "f1b3f18c715565b589b7823cda7448ce"
 type Client struct {
 	http.Client `json:"-"`
 	HostUrl     string                `json:"host_url,omitempty"` // as in https://codeforces.com, derived from contest_url
+	MyUrl       string                `json:"my_url"`             // as in https://codeforces.com/contest/4/my
 	ContestUrl  string                `json:"contest_url"`        // as in https://codeforces.com/contest/4
 	LangId      string                `json:"lang_id"`
 	ContestId   string                `json:"contest_id"`
@@ -36,10 +37,6 @@ func (client *Client) SubmitUrl() string {
 
 func (client *Client) LoginUrl() string {
 	return client.HostUrl + "/enter"
-}
-
-func (client *Client) MyUrl() string {
-	return client.ContestUrl + "/my"
 }
 
 func (client *Client) FindCSRF(URL string) (string, error) {
@@ -63,7 +60,6 @@ func (client *Client) FindCSRF(URL string) (string, error) {
 }
 
 func (client *Client) Login(handleOrEmail string, password string) error {
-	log.Printf("Logging in as %v\n", handleOrEmail)
 
 	csrf, err := client.FindCSRF(client.LoginUrl())
 	if err != nil {
@@ -179,8 +175,30 @@ const (
 	MemoryLimitExceeded
 )
 
+func printCases(cases compilation.TestCases) {
+	fmt.Print("[")
+	for i, c := range cases {
+		fmt.Print("[")
+		if len(c) > 0 {
+			fmt.Print(c[0])
+			for _, v := range c[1:] {
+				fmt.Print(", ", v)
+			}
+		}
+		fmt.Print("]")
+		if i != len(cases)-1 {
+			fmt.Print(", ")
+		}
+	}
+	fmt.Println("]")
+}
+
 type Cracker interface {
 	GetNextValue(client *Client, parts compilation.Parts) (int, error)
+}
+
+func removeLast(slice *[]int) {
+	*slice = (*slice)[:len(*slice)-1]
 }
 
 func (client *Client) Crack(source []byte, cracker Cracker) error {
@@ -195,12 +213,12 @@ func (client *Client) Crack(source []byte, cracker Cracker) error {
 	}
 
 	for {
+		printCases(client.Cases)
 		next, err := cracker.GetNextValue(client, parts)
 		if err != nil {
 			if _, ok := err.(ValueError); ok {
 				log.Printf("Error detected in last value. Retrying...")
-				client.Cases = client.Cases[:len(client.Cases)-1]
-				fmt.Println(client.Cases)
+				removeLast(&client.Cases[len(client.Cases)-1])
 				continue
 			}
 			if _, ok := err.(TestEndError); ok {
@@ -210,12 +228,11 @@ func (client *Client) Crack(source []byte, cracker Cracker) error {
 			return err
 		}
 		client.Cases[len(client.Cases)-1] = append(client.Cases[len(client.Cases)-1], next)
-		fmt.Println(client.Cases)
 	}
 }
 
 func (client *Client) getVerdict() (idText string, verdictText string, testNo string, timeText string, err error) {
-	resp, err := client.Get(client.MyUrl())
+	resp, err := client.Get(client.MyUrl)
 	if err != nil {
 		return
 	}
