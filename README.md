@@ -111,6 +111,7 @@ Eventually, you reach the limit:
 cfcracker: You can submit no more than 20 times per 5 minutes
 ```
 Just rerun it after some time with the newly acquired test cases.
+The tests are going to be automatically saved to the same file on error (or ctrl+c, i.e. SIGINT).
 
 You may encounter errors, which can be fixed by removing the test case and reading it again or trying to guess the real value (normally, it's the incorrect value +/- 1)
 
