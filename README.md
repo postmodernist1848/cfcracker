@@ -131,7 +131,7 @@ Sooner or later you'll find that the test contained an overflow edge case:
 2024/07/04 13:14:19 268751189: Test 9: WRONG_ANSWER (62ms)
 cfcracker: wrong answer on test 9
 ```
-So you finally fix [your solution](solutions/1A_fixed.cpp).
+So you finally [fix your solution](solutions/1A_fixed.cpp).
 
 ## How it works
 
