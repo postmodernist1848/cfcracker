@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-var extendedTesting = len(os.Getenv("EXTENDED_TESTING")) > 0
+var extendedTesting = os.Getenv("EXTENDED_TESTING") == "1"
 
 // compileAndRun compiles source and runs it on input as stdin.
 // Returns execution time, stdout as string and Cmd.Run() error

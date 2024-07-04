@@ -166,8 +166,7 @@ func main() {
 	}
 
 	if len(flag.Args()) < 2 {
-		fatalln("expected login data\n" +
-			"    Try using -help")
+		fatalln("expected login and password\n")
 	}
 
 	handleOrEmail := flag.Args()[0]
@@ -177,6 +176,8 @@ func main() {
 	if err != nil {
 		fatalln(err)
 	}
+
+	debugCLI(handleOrEmail, password, c, sourcePath, createConfigPath)
 
 	source, err := os.ReadFile(*sourcePath)
 	if err != nil {

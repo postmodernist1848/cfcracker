@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -93,7 +92,6 @@ func (client *Client) Login(handleOrEmail string, password string) error {
 	reg := regexp.MustCompile(`handle = "([\s\S]+?)"`)
 	tmp := reg.FindSubmatch(body)
 	if tmp == nil || len(tmp) < 2 {
-		os.WriteFile("response.html", body, 0666)
 		return errors.New("failed to log in")
 	}
 	handle := string(tmp[1])
