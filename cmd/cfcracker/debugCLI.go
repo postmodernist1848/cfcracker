@@ -3,7 +3,7 @@
 package main
 
 import (
-	"cfcracker/client"
+	"github.com/postmodernist1848/cfcracker/client"
 	"log"
 	"os"
 )

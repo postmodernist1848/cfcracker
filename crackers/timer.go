@@ -2,9 +2,9 @@
 package crackers
 
 import (
-	"cfcracker/client"
-	"cfcracker/compilation"
 	"fmt"
+	"github.com/postmodernist1848/cfcracker/client"
+	"github.com/postmodernist1848/cfcracker/compilation"
 	"log"
 	"math"
 	"time"

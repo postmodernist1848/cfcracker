@@ -3,10 +3,10 @@
 package client
 
 import (
-	"cfcracker/compilation"
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/postmodernist1848/cfcracker/compilation"
 	"io"
 	"log"
 	"net/http"
