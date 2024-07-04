@@ -21,6 +21,7 @@ First, you need to create a config:
 $ cfcracker -create-config solutions/1A.json
 Created sample config at 1A.json
 ```
+###### TODO: automatic config creation
 Fill it with:
 ```json
 {
@@ -144,4 +145,4 @@ Let's refer to `test_case` argument of `cfc_crack` as "this test":
 - When this test is found in `cfc_test_cases`, we skip it if it's not the last one so execution continues on normally.
 - When this test is found in `cfc_test_cases` and it's the last one, the program sleeps to get IDLENESS_LIMIT_EXCEEDED verdict.
 - When this test is not found in `cfc_test_cases`, we report the value by sleeping (if it's the Timer Cracker).
-  If all elements of `cfc_test_cases.back()` do not match this test, MEMORY_LIMIT_EXCEEDED verdict is created to enable auto correcting errors.
+If all elements of `cfc_test_cases.back()` do not match this test, MEMORY_LIMIT_EXCEEDED verdict is created to enable auto correcting errors.
