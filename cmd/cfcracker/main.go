@@ -11,6 +11,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"os"
+	"os/signal"
 	"time"
 )
 
@@ -82,7 +83,7 @@ func createConfig(path string) error {
 	return nil
 }
 
-func clientFromJSON(path string) (*client.Client, error) {
+func clientFromConfig(path string) (*client.Client, error) {
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -122,6 +123,19 @@ func clientFromJSON(path string) (*client.Client, error) {
 	return &c, nil
 }
 
+func clientToConfig(c *client.Client, path string) error {
+	file, err := os.OpenFile(path, os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	JSON, err := json.MarshalIndent(c, "", "    ")
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(JSON)
+	return err
+}
+
 func createSubmitFlags(name string) (flags *flag.FlagSet, sourcePath *string, configPath *string) {
 	flags = flag.NewFlagSet(name, flag.ExitOnError)
 	sourcePath = flags.String("source", "", "`path` to the problem solution")
@@ -144,24 +158,14 @@ func help() {
 	submitFlags.Usage()
 }
 
-func clientToJson(c *client.Client, path string) error {
-	panic("not implemented")
-	/*
-		file, err = os.OpenFile(path, os.O_WRONLY, 0644)
-		if err != nil {
-			return err
-		}
-	*/
-}
-
-var arg_i = 0
+var argI = 0
 
 func nextArg(errorMsg string) string {
-	arg_i++
-	if len(os.Args) <= arg_i {
+	argI++
+	if len(os.Args) <= argI {
 		fatalln(errorMsg)
 	}
-	return os.Args[arg_i]
+	return os.Args[argI]
 }
 
 func main() {
@@ -212,7 +216,7 @@ func main() {
 	handleOrEmail := flags.Args()[0]
 	password := flags.Args()[1]
 
-	c, err := clientFromJSON(*configPath)
+	c, err := clientFromConfig(*configPath)
 	if err != nil {
 		fatalln("could not parse config:", err)
 	}
@@ -251,8 +255,23 @@ func main() {
 		Increment: 100 * time.Millisecond,
 	}
 
+	sigChannel := make(chan os.Signal, 1)
+	signal.Notify(sigChannel, os.Interrupt)
+	go func() {
+		<-sigChannel
+		err := clientToConfig(c, *configPath)
+		if err != nil {
+			fatalln("ERROR: could not save config:", err)
+		}
+		os.Exit(1)
+	}()
+
 	err = c.Crack(source, cracker)
 	if err != nil {
+		saveErr := clientToConfig(c, *configPath)
+		if saveErr != nil {
+			fmt.Fprintln(os.Stderr, "ERROR: failed to save config:", saveErr)
+		}
 		fatalln(err)
 	}
 }
