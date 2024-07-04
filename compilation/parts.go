@@ -1,3 +1,4 @@
+// Package compilation provides means to create source files used by crackers.
 package compilation
 
 import (
@@ -42,7 +43,7 @@ type Parts struct {
 	part2 []byte
 }
 
-func New(source []byte) (Parts, error) {
+func NewParts(source []byte) (Parts, error) {
 	magic := []byte("/* CFCRACKER */")
 	const crackerSignature = " void cfc_crack(const std::vector<int> &test_case);"
 	signature := []byte(crackerSignature)
@@ -151,7 +152,7 @@ func (parts Parts) LTSource(cases TestCases, n int) string {
 //
 // >= 0 - RUNTIME_ERROR
 // < 0  - WRONG_ANSWER
-// TODO: also return 'length' of number
+// TODO: also report 'length' of number?
 func (parts Parts) SignSource(testCases TestCases) string {
 	var builder strings.Builder
 

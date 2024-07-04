@@ -1,7 +1,8 @@
+// Package client provides networking capabilities and the generic Crack method
+// that uses Cracker interface.
 package client
 
 import (
-	"bytes"
 	"cfcracker/compilation"
 	"errors"
 	"fmt"
@@ -21,13 +22,13 @@ var ftaa = compilation.RandString(18)
 var bfaa = "f1b3f18c715565b589b7823cda7448ce"
 
 type Client struct {
-	http.Client
-	HostUrl    string // as in https://codeforces.com
-	ContestUrl string // as in https://codeforces.com/contest/4
-	LangId     string
-	ContestId  string
-	ProblemId  string
-	Cases      compilation.TestCases
+	http.Client `json:"-"`
+	HostUrl     string                `json:"host_url,omitempty"` // as in https://codeforces.com, derived from contest_url
+	ContestUrl  string                `json:"contest_url"`        // as in https://codeforces.com/contest/4
+	LangId      string                `json:"lang_id"`
+	ContestId   string                `json:"contest_id"`
+	ProblemId   string                `json:"problem_id"`
+	Cases       compilation.TestCases `json:"test_cases"`
 }
 
 func (client *Client) SubmitUrl() string {
@@ -48,10 +49,8 @@ func (client *Client) FindCSRF(URL string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	os.WriteFile("response.html", body, 0666)
 
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -59,9 +58,7 @@ func (client *Client) FindCSRF(URL string) (string, error) {
 	// Find the input tag with name="csrf_token"
 	csrfToken, exists := doc.Find("input[name='csrf_token']").Attr("value")
 	if !exists {
-		log.Println(URL)
-		os.WriteFile("response.html", body, 0666)
-		return csrfToken, errors.New("failed to find csrf token")
+		return csrfToken, fmt.Errorf("%v: failed to find csrf token", URL)
 	}
 	return csrfToken, nil
 }
@@ -163,9 +160,9 @@ func (client *Client) PostSubmission(csrf string, source string) error {
 	return nil
 }
 
-type LastTestValueError struct{}
+type TestEndError struct{}
 
-func (LastTestValueError) Error() string {
+func (TestEndError) Error() string {
 	return "last test reached"
 }
 
@@ -190,7 +187,7 @@ type Cracker interface {
 
 func (client *Client) Crack(source []byte, cracker Cracker) error {
 
-	parts, err := compilation.New(source)
+	parts, err := compilation.NewParts(source)
 	if err != nil {
 		return err
 	}
@@ -203,12 +200,12 @@ func (client *Client) Crack(source []byte, cracker Cracker) error {
 		next, err := cracker.GetNextValue(client, parts)
 		if err != nil {
 			if _, ok := err.(ValueError); ok {
-				log.Println("Error detected in last value. Retrying...")
+				log.Printf("Error detected in last value. Retrying...")
 				client.Cases = client.Cases[:len(client.Cases)-1]
 				fmt.Println(client.Cases)
 				continue
 			}
-			if _, ok := err.(LastTestValueError); ok {
+			if _, ok := err.(TestEndError); ok {
 				client.Cases = append(client.Cases, []int{})
 				continue
 			}

@@ -2,86 +2,189 @@ package main
 
 import (
 	"cfcracker/client"
-	"cfcracker/compilation"
 	"cfcracker/crackers"
+	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
-	"log"
-	"net/http"
+	"io"
 	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"time"
 )
 
-// Possible outcomes that can be forced and their meanings:
-// Incorrect answer
-// Runtime error
+// Possible outcomes that can be forced manually:
+// Wrong answer            (exit(0) with garbage in stdout)
+// Runtime error           (non-zero exit code)
 // Idleness limit exceeded (sleep)
-// TL exceeded = probably shouldn't be used for anything, maybe as sign of fatal error
+// Memory limit exceeded   (malloc in a loop)
+// Time limit exceeded probably shouldn't be used for anything
 
 // Timer cracker
-// Idea: create a global start time and wait until ~100ms have passed since program startup
-// before waiting out the input value to achieve more precise readings
+// Idea: create a global start time and wait until some fixed time has passed since program startup
+// before waiting out the input value to negate differences in input reading time (before cfc_crack call)
+// Objection: read time is really not that different from test to test and can be accounted for in startup time
+// So it's better not to waste precious milliseconds
 
-// Idea:
-// measure startup time (time taken to reach cfc_crack() call) and subtract it from the time-to-wait or the actual reading
+// Idea: query length of input first to free up ILE verdict?
 
-// Idea: set the start time to +400ms or something to ignore longer runs before this test
-// allocate readings from 400ms to 950 to numbers from 0 to 10 (i.e. 50ms increments)
+// Idea: start waiting at 400ms since startup or something to ignore longer runs before current test
+// allocate readings from 400ms to 900 to numbers from 0 to 5
+// (requires using WRONG_ANSWER and RUNTIME_ERROR for different halves in Timer cracker)
 
 // Idea: use memory to communicate the value
 // Memory might be for passed tests only, though
 // Can't figure out how the memory reporting works right now
+// (really weird values show up in reports)
+// Currently only using MEMORY_LIMIT_EXCEEDED to signal error
 
-func main() {
-	if len(os.Args) < 3 {
-		fmt.Fprintf(os.Stderr, "cfcracker: expected 2 arguments, but got %d\n ", len(os.Args)-1)
-		os.Exit(1)
+func fatalln(a ...interface{}) {
+	fmt.Fprintf(os.Stderr, "%v: ", os.Args[0])
+	fmt.Fprintln(os.Stderr, a...)
+	os.Exit(1)
+}
+
+func checkNonEmpty(c *client.Client) error {
+	if c.ContestUrl == "" {
+		return errors.New("no contest URL")
+	}
+	if c.LangId == "" {
+		return errors.New("no language ID")
+	}
+	if c.ContestId == "" {
+		return errors.New("no contest ID")
+	}
+	if c.ProblemId == "" {
+		return errors.New("no problem ID")
+	}
+	return nil
+}
+
+func createConfig(path string) error {
+	// TODO: createConfig
+	emptyClientBytes, _ := json.MarshalIndent(client.Client{Cases: [][]int{{}}}, "", "    ")
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err != nil {
+		if os.IsExist(err) {
+			return fmt.Errorf("%s already exists", path)
+		}
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(emptyClientBytes)
+	if err != nil {
+		return fmt.Errorf("could not write to file %s: %w", path, err)
 	}
 
-	handleOrEmail := os.Args[1]
-	password := os.Args[2]
+	fmt.Println("Created sample config at", path)
+	return nil
+}
+
+func clientFromJSON(path string) (*client.Client, error) {
+
+	file, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, errors.New("config file not found. Create one using -create-config option")
+		}
+		return nil, err
+	}
+	contents, err := io.ReadAll(file)
+	file.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	var c client.Client
+	err = json.Unmarshal(contents, &c)
+	if err != nil {
+		return nil, err
+	}
+
+	err = checkNonEmpty(&c)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedURL, err := url.Parse(c.ContestUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse contest_url: %w", err)
+	}
+	c.HostUrl = parsedURL.Scheme + "://" + parsedURL.Host
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
-	c := &client.Client{
-		Client:     http.Client{Jar: jar},
-		HostUrl:    "https://y2023.contest.codeforces.com",
-		ContestUrl: "https://y2023.contest.codeforces.com/group/KpnfyE63vT/contest/532234",
-		LangId:     "54",     // C++17
-		ContestId:  "532234", //
-		ProblemId:  "2C",     //
-		Cases: compilation.TestCases{
-			{0, 0, 2, 2,
-				1, 3, 2, 4},
-			{1, 1, 3, 5,
-				5, 2, 7, 4,
-				2, 4, 6, 7},
-			{-1000000000, -1000000000, 1000000000, 1000000000},
-			{1, 1, 3, 3,
-				2, 0, 2, 4},
-			{1, 1, 2, 2,
-				0, 0, 3, 3},
-			{4, 4, 5, 5,
-				4, 5, 4, 5},
+	c.Jar = jar
+	return &c, nil
+}
 
-			{},
-			// Test 7
-			//{0, 2, 8, 6,
-			//	1, 1, 7, 7,
-			//	2, 0, 6, 8},
-		},
+func main() {
+
+	// Options:
+	// -source
+	// -config
+	// -create-config
+	// -strategy ?
+
+	// Required:
+	sourcePath := flag.String("source", "", "path to the problem solution")
+
+	// With default:
+	configPath := flag.String("config", "cfcracker.json", "path to the config json")
+
+	// Optional:
+	createConfigPath := flag.String("create-config", "", "create a new config file")
+
+	flag.Parse()
+
+	shouldCreateConfig := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "create-config" {
+			shouldCreateConfig = true
+		}
+	})
+
+	var err error
+	if shouldCreateConfig {
+		err = createConfig(*createConfigPath)
+		if err != nil {
+			fatalln("could not create config file:", err)
+		}
+		return
 	}
 
+	if *configPath == "" {
+		fatalln("no config path provided")
+	}
+
+	if *sourcePath == "" {
+		fatalln("source path is required")
+	}
+
+	if len(flag.Args()) < 2 {
+		fatalln("expected login data\n" +
+			"    Try using -help")
+	}
+
+	handleOrEmail := flag.Args()[0]
+	password := flag.Args()[1]
+
+	c, err := clientFromJSON(*configPath)
+	if err != nil {
+		fatalln(err)
+	}
+
+	source, err := os.ReadFile(*sourcePath)
+	if err != nil {
+		fatalln(err)
+	}
 	err = c.Login(handleOrEmail, password)
 	if err != nil {
-		log.Fatalln(err)
-	}
-
-	source, err := os.ReadFile("solutions/C.cpp")
-	if err != nil {
-		log.Fatalln(err)
+		fatalln(err)
 	}
 
 	//cracker := &crackers.BinSearchCracker{
@@ -95,6 +198,6 @@ func main() {
 
 	err = c.Crack(source, cracker)
 	if err != nil {
-		log.Fatalln(err)
+		fatalln(err)
 	}
 }

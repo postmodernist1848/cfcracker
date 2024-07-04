@@ -58,7 +58,7 @@ func partsFromFile(t *testing.T, path string) compilation.Parts {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parts, err := compilation.New(source)
+	parts, err := compilation.NewParts(source)
 	if err != nil {
 		t.Fatal(err)
 	}

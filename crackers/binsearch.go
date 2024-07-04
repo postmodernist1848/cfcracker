@@ -30,7 +30,7 @@ func (binSearchCracker *BinSearchCracker) GetNextValue(c *client.Client, parts c
 			return 0, client.ValueError{}
 		}
 		if res.Verdict == client.IdlenessLimitExceeded {
-			return 0, client.LastTestValueError{}
+			return 0, client.TestEndError{}
 		}
 
 		if res.Verdict == client.RuntimeError {

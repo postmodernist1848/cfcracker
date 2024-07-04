@@ -1,3 +1,4 @@
+// Package crackers provides implementations of client.Cracker interface.
 package crackers
 
 import (
@@ -10,8 +11,9 @@ import (
 )
 
 // TimerCracker uses execution time to get the values digit by digit
+//
+// TODO: query 'length' of number with sign?
 // TODO: this could be made more precise (i. e RUNTIME_ERROR for digits 0-4 and WRONG_ANSWER for 5-9)
-// TODO: query length of input first to free up ILE verdict
 type TimerCracker struct {
 	Increment   time.Duration // result is returned as x * Increment
 	startupTime time.Duration // startup time is subtracted from the result
@@ -44,7 +46,7 @@ func (cracker *TimerCracker) GetNextValue(c *client.Client, parts compilation.Pa
 		return 0, client.ValueError{}
 	}
 	if sub.Verdict == client.IdlenessLimitExceeded {
-		return 0, client.LastTestValueError{}
+		return 0, client.TestEndError{}
 	}
 
 	if sub.Verdict == client.RuntimeError {
@@ -74,7 +76,7 @@ func (cracker *TimerCracker) GetNextValue(c *client.Client, parts compilation.Pa
 			return 0, client.ValueError{}
 		}
 		if sub.Verdict == client.IdlenessLimitExceeded {
-			return 0, client.LastTestValueError{}
+			return 0, client.TestEndError{}
 		}
 		result += power * cracker.elapsedToValue(sub.Time)
 		power *= 10
