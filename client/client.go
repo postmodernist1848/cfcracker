@@ -175,9 +175,9 @@ const (
 	MemoryLimitExceeded
 )
 
-func printCases(cases compilation.TestCases) {
+func (client *Client) PrintCases() {
 	fmt.Print("[")
-	for i, c := range cases {
+	for i, c := range client.Cases {
 		fmt.Print("[")
 		if len(c) > 0 {
 			fmt.Print(c[0])
@@ -186,7 +186,7 @@ func printCases(cases compilation.TestCases) {
 			}
 		}
 		fmt.Print("]")
-		if i != len(cases)-1 {
+		if i != len(client.Cases)-1 {
 			fmt.Print(", ")
 		}
 	}
@@ -213,7 +213,7 @@ func (client *Client) Crack(source []byte, cracker Cracker) error {
 	}
 
 	for {
-		printCases(client.Cases)
+		client.PrintCases()
 		next, err := cracker.GetNextValue(client, parts)
 		if err != nil {
 			if _, ok := err.(ValueError); ok {
