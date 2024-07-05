@@ -17,12 +17,16 @@ Let's say you have your solution for https://codeforces.com/problemset/problem/1
 and you get sanitizer output, but it's just a demo).
 
 First, you need to create a config:
+Either automatically with:
 ```console
-$ cfcracker create-config solutions/1A.json
+$ cfcracker create-config solutions/1A.json [optional url and login data]
+```
+or manually with:
+```console
+$ cfcracker create-config -empty solutions/1A.json
 Created sample config at 1A.json
 ```
-###### TODO: automatic config creation
-Fill it with:
+The result should be:
 ```json
 {
     "contest_url": "https://codeforces.com/problemset",
