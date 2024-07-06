@@ -120,8 +120,8 @@ The tests are going to be automatically saved to the same file on error (or ctrl
 You may encounter errors, which can be fixed by removing the test case and reading it again or trying to guess the real value (normally, it's the incorrect value +/- 1)
 
 ### Common signs of errors in the test cases read:
-- Logs say "Error detected in last value. Retrying..." - CFCracker will remove last value and try to query it again.
-- CFCracker terminates saying that there was a wrong answer on test n, but the test passes without cracker.
+- Logs say "Error detected in last value. Retrying..." - CFCracker will remove the last value and try to query it again.
+- CFCracker terminates saying that there was a wrong answer on test n, but the test passes without cracker means there was an error in previous tests.
 
 Sooner or later you'll find that the test contained an overflow edge case:
 ```console
@@ -150,4 +150,4 @@ Let's refer to `test_case` argument of `cfc_crack` as "this test":
 - When this test is found in `cfc_test_cases`, we skip it if it's not the last one so execution continues on normally.
 - When this test is found in `cfc_test_cases` and it's the last one, the program sleeps to get IDLENESS_LIMIT_EXCEEDED verdict.
 - When this test is not found in `cfc_test_cases`, we report the value by sleeping (if it's the Timer Cracker).
-- If all elements of `cfc_test_cases.back()` do not match this test, MEMORY_LIMIT_EXCEEDED verdict is created to enable auto correcting errors.
+- If any elements of `cfc_test_cases.back()` do not match this test, MEMORY_LIMIT_EXCEEDED verdict is created to enable auto correcting errors.
