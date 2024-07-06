@@ -332,6 +332,9 @@ func main() {
 	if subcommand == "create-config" {
 		flags, URL, langId, empty := createCreateConfigFlags()
 		flags.Parse(os.Args[2:])
+		if len(flags.Args()) > 1 {
+			fatalln("too many arguments for create-config")
+		}
 		path := firstArg(flags.Args(), "expected path for create-config")
 
 		if *empty {
