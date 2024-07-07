@@ -2,9 +2,9 @@ package crackers
 
 import (
 	"bytes"
-	"cfcracker/compilation"
 	"context"
 	"errors"
+	"github.com/postmodernist1848/cfcracker/compilation"
 	"log"
 	"os"
 	"os/exec"
@@ -68,7 +68,7 @@ func partsFromFile(t *testing.T, path string) compilation.Parts {
 
 func TestConstructDigitSource(t *testing.T) {
 
-	parts := partsFromFile(t, "../solutions/watermelon.cpp")
+	parts := partsFromFile(t, "../solutions/watermelon_cracked.cpp")
 	testCases := compilation.TestCases{
 		{},
 	}
@@ -105,7 +105,7 @@ func TestConstructDigitSource(t *testing.T) {
 }
 
 func TestErrorDetection(t *testing.T) {
-	parts := partsFromFile(t, "../solutions/C.cpp")
+	parts := partsFromFile(t, "../solutions/2C.cpp")
 
 	testCases := compilation.TestCases{
 		{0, 0, 2, 2, 1, 3, 2, 4},
@@ -124,7 +124,7 @@ func TestErrorDetection(t *testing.T) {
 }
 
 func TestMultiDigit(t *testing.T) {
-	parts := partsFromFile(t, "../solutions/C.cpp")
+	parts := partsFromFile(t, "../solutions/2C.cpp")
 
 	testCases := compilation.TestCases{
 		{0, 0, 2, 2, 1, 3, 2, 4},
@@ -170,7 +170,7 @@ func TestMultiDigit(t *testing.T) {
 }
 
 func TestSignSource(t *testing.T) {
-	parts := partsFromFile(t, "../solutions/C.cpp")
+	parts := partsFromFile(t, "../solutions/2C.cpp")
 
 	testCases := compilation.TestCases{
 		{0, 0, 2, 2, 1, 3, 2, 4},
@@ -204,7 +204,7 @@ func TestConstructSourceLT(t *testing.T) {
 		{{8}, {}},
 		{{8}, {3}},
 	} {
-		parts := partsFromFile(t, "../solutions/watermelon.cpp")
+		parts := partsFromFile(t, "../solutions/watermelon_cracked.cpp")
 		constructed := parts.LTSource(testCases, 10)
 
 		_, stdout, err := compileAndRun(t, constructed, "3")
