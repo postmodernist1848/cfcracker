@@ -10,7 +10,9 @@ int main() {
     std::cin >> x;
     test.push_back(x);
 
+#ifdef CFCRACKER
     cfc_crack(test);
+#endif
 
     if (x % 2 == 0) {
         std::cout << "Yes";
