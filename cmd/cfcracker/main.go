@@ -284,15 +284,22 @@ func createSubmitFlags(name string) (flags *flag.FlagSet, sourcePath *string, co
 	return
 }
 
+func createCrackFlags() (flags *flag.FlagSet, sourcePath *string, configPath *string, method *string) {
+	flags, sourcePath, configPath = createSubmitFlags("crack")
+	method = flags.String("method", "timer 100", "`string` describing the cracking method: \"timer <ms, e.g. 100>\" or \"crack <min> <max>\"")
+	return
+}
+
 func help() {
 	const usage = `Usage: cfcracker subcommand [OPTIONS]
     subcommand may be one of the following:
-        crack [OPTIONS] - start cracking
-        submit [OPTIONS] - submit code without modifications
-        create-config <path> - create config file`
+        help - show this message
+        crack [OPTIONS] <handle or Email> <password> - start cracking
+        submit [OPTIONS] <handle or Email> <password> - submit code without modifications
+        create-config [OPTIONS] <path> - create config file`
 	fmt.Println(usage)
 
-	flags, _, _ := createSubmitFlags("crack")
+	flags, _, _, _ := createCrackFlags()
 	flags.SetOutput(os.Stdout)
 	flags.Usage()
 
@@ -301,7 +308,7 @@ func help() {
 	flags.Usage()
 
 	flags, _, _, _ = createCreateConfigFlags()
-	flags.SetOutput(os.Stderr)
+	flags.SetOutput(os.Stdout)
 	flags.Usage()
 }
 
@@ -312,13 +319,50 @@ func firstArg(args []string, errorMsg string) string {
 	return args[0]
 }
 
+func initializeSubmissions(args []string, sourcePath *string, configPath *string) ([]byte, *client.Client) {
+
+	if *configPath == "" {
+		fatalln("no config path")
+	}
+
+	if *sourcePath == "" {
+		fatalln("no source path")
+	}
+
+	if len(args) < 2 {
+		fatalln("expected login and password")
+	}
+
+	handleOrEmail := args[0]
+	password := args[1]
+
+	c, err := clientFromConfig(*configPath)
+	if err != nil {
+		fatalln("could not parse config:", err)
+	}
+
+	source, err := os.ReadFile(*sourcePath)
+	if err != nil {
+		fatalln("could not read source file:", err)
+	}
+
+	err = c.Login(handleOrEmail, password)
+	if err != nil {
+		fatalln("could not log in:", err)
+	}
+
+	return source, c
+}
+
 func main() {
 
 	// Options:
 	// -source
 	// -config
 	// -create-config
-	// -strategy ?
+	// -method
+	// ./cfcracker crack -method="timer 100"
+	// ./cfcracker crack -method="binsearch 1 100"
 
 	subcommand := firstArg(os.Args[1:], "expected subcommand")
 
@@ -363,47 +407,11 @@ func main() {
 		return
 	}
 
-	if subcommand != "submit" && subcommand != "crack" {
-		fatalln("unknown subcommand", subcommand)
-	}
-
-	flags, sourcePath, configPath := createSubmitFlags(subcommand)
-
-	flags.Parse(os.Args[2:])
-
-	if *configPath == "" {
-		fatalln("no config path")
-	}
-
-	if *sourcePath == "" {
-		fatalln("no source path")
-	}
-
-	if len(flags.Args()) < 2 {
-		fatalln("expected login and password")
-	}
-
-	handleOrEmail := flags.Args()[0]
-	password := flags.Args()[1]
-
-	c, err := clientFromConfig(*configPath)
-	if err != nil {
-		fatalln("could not parse config:", err)
-	}
-
-	source, err := os.ReadFile(*sourcePath)
-	if err != nil {
-		fatalln("could not read source file:", err)
-	}
-
-	debugCLI(subcommand, c, *sourcePath, *configPath, handleOrEmail, password)
-
-	err = c.Login(handleOrEmail, password)
-	if err != nil {
-		fatalln("could not log in:", err)
-	}
-
 	if subcommand == "submit" {
+		flags, sourcePath, configPath := createSubmitFlags(subcommand)
+		flags.Parse(os.Args[2:])
+		source, c := initializeSubmissions(flags.Args(), sourcePath, configPath)
+
 		csrf, err := c.FindCSRF(c.SubmitUrl())
 		if err != nil {
 			fatalln("could not find csrf token:", err)
@@ -415,33 +423,55 @@ func main() {
 		return
 	}
 
-	// TODO: strategy flag
-	//cracker := &crackers.BinSearchCracker{
-	//	Low:  1,
-	//	High: 100 + 1,
-	//}
+	if subcommand == "crack" {
+		flags, sourcePath, configPath, method := createCrackFlags()
+		flags.Parse(os.Args[2:])
 
-	cracker := &crackers.TimerCracker{
-		Increment: 100 * time.Millisecond,
-	}
+		var cracker client.Cracker
 
-	sigChannel := make(chan os.Signal, 1)
-	signal.Notify(sigChannel, os.Interrupt)
-	go func() {
-		<-sigChannel
-		err := clientToConfig(c, *configPath)
+		parts := strings.Split(*method, " ")
+		if len(parts) == 2 && parts[0] == "timer" {
+			increment, err := strconv.Atoi(parts[1])
+			if err != nil {
+				fatalln("could not parse timer time:", err)
+			}
+			cracker = &crackers.TimerCracker{Increment: time.Millisecond * time.Duration(increment)}
+		} else if len(parts) == 3 && parts[0] == "binsearch" {
+			mn, err := strconv.Atoi(parts[1])
+			if err != nil {
+				fatalln("could not parse binsearch min:", err)
+			}
+			mx, err := strconv.Atoi(parts[2])
+			if err != nil {
+				fatalln("could not parse binsearch max:", err)
+			}
+			cracker = &crackers.BinSearchCracker{Low: mn, High: mx + 1}
+		} else {
+			fatalln("incorrect method string")
+		}
+
+		source, c := initializeSubmissions(flags.Args(), sourcePath, configPath)
+
+		sigChannel := make(chan os.Signal, 1)
+		signal.Notify(sigChannel, os.Interrupt)
+		go func() {
+			<-sigChannel
+			err := clientToConfig(c, *configPath)
+			if err != nil {
+				fatalln("ERROR: could not save config:", err)
+			}
+			os.Exit(1)
+		}()
+
+		err = c.Crack(source, cracker)
 		if err != nil {
-			fatalln("ERROR: could not save config:", err)
+			saveErr := clientToConfig(c, *configPath)
+			if saveErr != nil {
+				fmt.Fprintln(os.Stderr, "ERROR: failed to save config:", saveErr)
+			}
+			fatalln(err)
 		}
-		os.Exit(1)
-	}()
-
-	err = c.Crack(source, cracker)
-	if err != nil {
-		saveErr := clientToConfig(c, *configPath)
-		if saveErr != nil {
-			fmt.Fprintln(os.Stderr, "ERROR: failed to save config:", saveErr)
-		}
-		fatalln(err)
 	}
+	fatalln("unknown subcommand", subcommand)
+
 }

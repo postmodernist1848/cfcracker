@@ -151,3 +151,7 @@ Let's refer to `test_case` argument of `cfc_crack` as "this test":
 - When this test is found in `cfc_test_cases` and it's the last one, the program sleeps to get IDLENESS_LIMIT_EXCEEDED verdict.
 - When this test is not found in `cfc_test_cases`, we report the value by sleeping (if it's the Timer Cracker).
 - If any elements of `cfc_test_cases.back()` do not match this test, MEMORY_LIMIT_EXCEEDED verdict is created to enable autocorrecting errors.
+
+Similarly, we now have the binary search method (slower, but more precise)
+for cases where timer is not applicable.
+See `cfcracker help` to find out about choosing cracking method.
