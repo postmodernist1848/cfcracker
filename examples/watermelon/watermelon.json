@@ -1,0 +1,13 @@
+{
+    "my_url": "https://codeforces.com/problemset/status?my=on",
+    "contest_url": "https://codeforces.com/problemset",
+    "lang_id": "54",
+    "contest_id": "4",
+    "problem_id": "A",
+    "test_cases": [
+        [
+            8
+        ],
+        []
+    ]
+}
