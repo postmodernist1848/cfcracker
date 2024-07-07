@@ -12,19 +12,19 @@ $ $GOPATH/bin/cfcracker help
 ```
 ## How to use it
 
-Let's say you have your solution for https://codeforces.com/problemset/problem/1/A at [solutions/1A.cpp](solutions/1A.cpp).
+Let's say you have your solution for https://codeforces.com/problemset/problem/1/A at [examples/1A/1A.cpp](examples/1A/1A.cpp).
 (In this simplified example the tests are actually available on CodeForces,
 and you get sanitizer output, but it's just a demo).
 
 First, you need to create a config:
 Either automatically with:
 ```console
-$ cfcracker create-config solutions/1A.json [optional url and login data]
+$ cfcracker create-config cfcracker.json [optional url and login data]
 ```
 or manually with:
 ```console
-$ cfcracker create-config -empty solutions/1A.json
-Created sample config at 1A.json
+$ cfcracker create-config -empty cfcracker.json
+Created sample config at cfcracker.json
 ```
 The result should be:
 ```json
@@ -55,7 +55,7 @@ The declaration with a preceding `/* CFCRACKER */` comment will be checked for c
 Then, call the function on a vector of inputs that you consider part of the test case (for example, you can omit size of input and only add important parts).
 You can use the `CFCRACKER` macro that is added by CFCracker in generated code to still be able to send submissions as normal.
 
-[solutions/1A_crack.cpp](solutions/1A_crack.cpp):
+[examples/1A/1A_crack.cpp](examples/1A/1A_crack.cpp):
 ```c++
 #include <vector>
 /* CFCRACKER */ void cfc_crack(const std::vector<int> &test_case);
@@ -79,7 +79,7 @@ int main() {
 Start cracking with:
 ###### Tip: you can use HISTCONTROL=ignorespace option in bash to disable saving the command (and password) to history
 ```console
-$  cfcracker crack -source solutions/1A_crack.cpp -config solutions/1A.json postmodernist1848 password
+$  cfcracker crack -source examples/1A/1A_crack.cpp -config cfcracker.json postmodernist1848 password
 ```
 You'll see the logs of cracking and the test cases will be printed:
 ```console
@@ -136,7 +136,7 @@ Sooner or later you'll find that the test contained an overflow edge case:
 2024/07/04 13:14:19 268751189: Test 9: WRONG_ANSWER (62ms)
 cfcracker: wrong answer on test 9
 ```
-So you finally [fix your solution](solutions/1A_fixed.cpp).
+So you finally [fix your solution](examples/1A/1A_fixed.cpp).
 
 ## How it works
 
