@@ -144,10 +144,10 @@ There are two methods of "cracking" implemented currently. \
 The most efficient one is the Timer Cracker. It uses the execution time report of a submission to extract a numeric value. \
 E.g. wait for 100ms * first digit and save the result. \
 Currently only 1 second or greater time limits are supported. \
-Only numeric values (64 bit signed integers) can be reported. \
+Only numeric values (64-bit signed integers) can be reported. \
 First, the test_cases are compiled to `std::vector<std::vector<int>> cfc_test_cases`.  \
 Let's refer to `test_case` argument of `cfc_crack` as "this test":
 - When this test is found in `cfc_test_cases`, we skip it if it's not the last one so execution continues on normally.
 - When this test is found in `cfc_test_cases` and it's the last one, the program sleeps to get IDLENESS_LIMIT_EXCEEDED verdict.
 - When this test is not found in `cfc_test_cases`, we report the value by sleeping (if it's the Timer Cracker).
-- If any elements of `cfc_test_cases.back()` do not match this test, MEMORY_LIMIT_EXCEEDED verdict is created to enable auto correcting errors.
+- If any elements of `cfc_test_cases.back()` do not match this test, MEMORY_LIMIT_EXCEEDED verdict is created to enable autocorrecting errors.
