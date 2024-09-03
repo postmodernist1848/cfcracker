@@ -20,12 +20,12 @@ var extendedTesting = os.Getenv("EXTENDED_TESTING") == "1"
 // compileAndRun compiles source and runs it on input as stdin.
 // Returns execution time, stdout as string and Cmd.Run() error
 func compileAndRun(t *testing.T, source string, input string) (time.Duration, string, error) {
-	err := os.WriteFile("../solutions/out.cpp", []byte(source), 0666)
+	err := os.WriteFile("out.cpp", []byte(source), 0666)
 	if err != nil {
 		t.Fatalf("could not write to file: %v", err)
 	}
-	cmd := exec.Command("clang++", "-std=c++17", "-Wall", "-Wextra", "-Wpedantic", "../solutions/out.cpp",
-		"-o", "../solutions/a.out")
+	cmd := exec.Command("clang++", "-std=c++17", "-Wall", "-Wextra", "-Wpedantic", "out.cpp",
+		"-o", "a.out")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitError *exec.ExitError
@@ -41,7 +41,7 @@ func compileAndRun(t *testing.T, source string, input string) (time.Duration, st
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	cmd = exec.CommandContext(ctx, "../solutions/a.out")
+	cmd = exec.CommandContext(ctx, "./a.out")
 
 	cmd.Stdin = strings.NewReader(input)
 	stdout := bytes.NewBuffer(make([]byte, 0))
@@ -68,7 +68,7 @@ func partsFromFile(t *testing.T, path string) compilation.Parts {
 
 func TestConstructDigitSource(t *testing.T) {
 
-	parts := partsFromFile(t, "../solutions/watermelon_cracked.cpp")
+	parts := partsFromFile(t, "../examples/watermelon/watermelon_cracked.cpp")
 	testCases := compilation.TestCases{
 		{},
 	}
@@ -105,7 +105,7 @@ func TestConstructDigitSource(t *testing.T) {
 }
 
 func TestErrorDetection(t *testing.T) {
-	parts := partsFromFile(t, "../solutions/2C.cpp")
+	parts := partsFromFile(t, "../examples/2C/2C.cpp")
 
 	testCases := compilation.TestCases{
 		{0, 0, 2, 2, 1, 3, 2, 4},
@@ -124,7 +124,7 @@ func TestErrorDetection(t *testing.T) {
 }
 
 func TestMultiDigit(t *testing.T) {
-	parts := partsFromFile(t, "../solutions/2C.cpp")
+	parts := partsFromFile(t, "../examples/2C/2C.cpp")
 
 	testCases := compilation.TestCases{
 		{0, 0, 2, 2, 1, 3, 2, 4},
@@ -170,7 +170,7 @@ func TestMultiDigit(t *testing.T) {
 }
 
 func TestSignSource(t *testing.T) {
-	parts := partsFromFile(t, "../solutions/2C.cpp")
+	parts := partsFromFile(t, "../examples/2C/2C.cpp")
 
 	testCases := compilation.TestCases{
 		{0, 0, 2, 2, 1, 3, 2, 4},
@@ -204,7 +204,7 @@ func TestConstructSourceLT(t *testing.T) {
 		{{8}, {}},
 		{{8}, {3}},
 	} {
-		parts := partsFromFile(t, "../solutions/watermelon_cracked.cpp")
+		parts := partsFromFile(t, "../examples/watermelon/watermelon_cracked.cpp")
 		constructed := parts.LTSource(testCases, 10)
 
 		_, stdout, err := compileAndRun(t, constructed, "3")
