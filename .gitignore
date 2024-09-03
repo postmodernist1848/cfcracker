@@ -1,6 +1,4 @@
 cfcracker
-!cfcracker/
 a.out
-/solutions/test.cpp
-/solutions/out.cpp
+out.cpp
 .idea
