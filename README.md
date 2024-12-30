@@ -144,7 +144,7 @@ There are two methods of "cracking" implemented currently. \
 The most efficient one is the Timer Cracker. It uses the execution time report of a submission to extract a numeric value. \
 E.g. wait for 100ms * first digit and save the result. \
 Currently only 1 second or greater time limits are supported. \
-Only numeric values (64-bit signed integers) can be reported. \
+Only numeric values (32-bit signed integers) can be reported. \
 First, the test_cases are compiled to `std::vector<std::vector<int>> cfc_test_cases`.  \
 Let's refer to `test_case` argument of `cfc_crack` as "this test":
 - When this test is found in `cfc_test_cases`, we skip it if it's not the last one so execution continues on normally.
