@@ -286,7 +286,7 @@ func createSubmitFlags(name string) (flags *flag.FlagSet, sourcePath *string, co
 
 func createCrackFlags() (flags *flag.FlagSet, sourcePath *string, configPath *string, method *string) {
 	flags, sourcePath, configPath = createSubmitFlags("crack")
-	method = flags.String("method", "timer 100", "`string` describing the cracking method: \"timer <ms, e.g. 100>\" or \"crack <min> <max>\"")
+	method = flags.String("method", "timer 100", "`string` describing the cracking method: \"timer <ms, e.g. 100>\" or \"binsearch <min> <max>\"")
 	return
 }
 
