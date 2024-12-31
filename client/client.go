@@ -278,10 +278,6 @@ func (client *Client) getVerdictChecked(prevId string) (idText string, verdictTe
 			if err != nil {
 				return
 			}
-			if subTime == 0 {
-				log.Printf("Encountered 0ms time. Retrying...")
-				continue
-			}
 			if unit != "ms" {
 				log.Printf("Warning: parsed %v time unit. Expected ms", unit)
 			}
