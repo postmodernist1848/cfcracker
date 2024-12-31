@@ -284,9 +284,10 @@ func createSubmitFlags(name string) (flags *flag.FlagSet, sourcePath *string, co
 	return
 }
 
-func createCrackFlags() (flags *flag.FlagSet, sourcePath *string, configPath *string, method *string) {
+func createCrackFlags() (flags *flag.FlagSet, sourcePath *string, configPath *string, method *string, assumeUnsigned *bool) {
 	flags, sourcePath, configPath = createSubmitFlags("crack")
 	method = flags.String("method", "timer 100", "`string` describing the cracking method: \"timer <ms, e.g. 100>\" or \"binsearch <min> <max>\"")
+	assumeUnsigned = flags.Bool("assume-unsigned", false, "assume that the input is non-negative (may be used for optimizations)")
 	return
 }
 
@@ -299,7 +300,7 @@ func help() {
         create-config [OPTIONS] <path> - create config file`
 	fmt.Println(usage)
 
-	flags, _, _, _ := createCrackFlags()
+	flags, _, _, _, _ := createCrackFlags()
 	flags.SetOutput(os.Stdout)
 	flags.Usage()
 
@@ -424,7 +425,7 @@ func main() {
 	}
 
 	if subcommand == "crack" {
-		flags, sourcePath, configPath, method := createCrackFlags()
+		flags, sourcePath, configPath, method, assumeUnsigned := createCrackFlags()
 		flags.Parse(os.Args[2:])
 
 		var cracker client.Cracker
@@ -435,11 +436,17 @@ func main() {
 			if err != nil {
 				fatalln("could not parse timer time:", err)
 			}
-			cracker = &crackers.TimerCracker{Increment: time.Millisecond * time.Duration(increment)}
+			cracker = &crackers.TimerCracker{Increment: time.Millisecond * time.Duration(increment), AssumeUnsigned: *assumeUnsigned}
 		} else if len(parts) == 3 && parts[0] == "binsearch" {
 			mn, err := strconv.Atoi(parts[1])
 			if err != nil {
 				fatalln("could not parse binsearch min:", err)
+			}
+			if *assumeUnsigned {
+				if mn < 0 {
+					_, _ = fmt.Fprintf(os.Stderr, "warning: mn is clamped to 0 because assume-unsigned is specified")
+					mn = 0
+				}
 			}
 			mx, err := strconv.Atoi(parts[2])
 			if err != nil {
@@ -473,5 +480,4 @@ func main() {
 		}
 	}
 	fatalln("unknown subcommand", subcommand)
-
 }

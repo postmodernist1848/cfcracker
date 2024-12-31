@@ -15,8 +15,9 @@ import (
 // TODO: query 'length' of number with sign?
 // TODO: this could be made more precise (i. e RUNTIME_ERROR for digits 0-4 and WRONG_ANSWER for 5-9)
 type TimerCracker struct {
-	Increment   time.Duration // result is returned as x * Increment
-	startupTime time.Duration // startup time is subtracted from the result
+	Increment      time.Duration // result is returned as x * Increment
+	startupTime    time.Duration // startup time is subtracted from the result
+	AssumeUnsigned bool
 }
 
 func (cracker *TimerCracker) elapsedToValue(elapsed time.Duration) int {
@@ -34,29 +35,31 @@ func (cracker *TimerCracker) GetNextValue(c *client.Client, parts compilation.Pa
 		cracker.startupTime = time.Millisecond * 30
 	}
 
-	signSource := parts.SignSource(c.Cases)
-	sub, err := c.Submit(csrf, signSource)
-	if err != nil {
-		return 0, err
-	}
-
 	var sign int
-
-	if sub.Verdict == client.MemoryLimitExceeded {
-		return 0, client.ValueError{}
-	}
-	if sub.Verdict == client.IdlenessLimitExceeded {
-		return 0, client.TestEndError{}
-	}
-
-	if sub.Verdict == client.RuntimeError {
+	if cracker.AssumeUnsigned {
 		sign = 1
-	} else if sub.Verdict == client.WrongAnswer {
-		sign = -1
 	} else {
-		return 0, fmt.Errorf("timer: unused verdict %v", sub.Verdict)
-	}
+		signSource := parts.SignSource(c.Cases)
+		sub, err := c.Submit(csrf, signSource)
+		if err != nil {
+			return 0, err
+		}
 
+		if sub.Verdict == client.MemoryLimitExceeded {
+			return 0, client.ValueError{}
+		}
+		if sub.Verdict == client.IdlenessLimitExceeded {
+			return 0, client.TestEndError{}
+		}
+
+		if sub.Verdict == client.RuntimeError {
+			sign = 1
+		} else if sub.Verdict == client.WrongAnswer {
+			sign = -1
+		} else {
+			return 0, fmt.Errorf("timer: unused verdict %v", sub.Verdict)
+		}
+	}
 	log.Printf("sign: %v", sign)
 
 	result := 0
@@ -68,7 +71,7 @@ func (cracker *TimerCracker) GetNextValue(c *client.Client, parts compilation.Pa
 			cracker.Increment,
 			digitNo,
 		)
-		sub, err = c.Submit(csrf, source)
+		sub, err := c.Submit(csrf, source)
 		if err != nil {
 			return 0, err
 		}
